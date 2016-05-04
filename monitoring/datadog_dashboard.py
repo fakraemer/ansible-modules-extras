@@ -38,7 +38,7 @@ short_description: Manage Datadog dashboards
 description:
     - "Manage Datadog screenboards and timeboards"
     - "Options like described on http://docs.datadoghq.com/api/"
-version_added: "2.1"
+version_added: "2.2"
 author: "Fabian Krämer (@fakraemer)"
 notes:
     - "Exports the remote dashboard as datadog_dashboard fact if run in check mode, see examples."
