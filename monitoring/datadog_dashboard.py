@@ -27,9 +27,9 @@ except ImportError:
     IMPORT_ERROR = '"datadog" lib required for this module'
 
 try:
-    from json_delta import udiff
+    from deepdiff import DeepDiff
 except ImportError:
-    IMPORT_ERROR = '"json_delta" lib required for this module'
+    IMPORT_ERROR = '"deepdiff" lib required for this module'
 
 DOCUMENTATION = '''
 ---
@@ -42,13 +42,12 @@ version_added: "2.2"
 author: "Fabian Krämer (@fakraemer)"
 notes:
     - "Exports the remote dashboard as datadog_dashboard fact if run in check mode, see examples."
-    - "Exports a udiff patch of the local and remote state as datadog_dashboard_patch fact if run against an existing dashboard."
     - "Widgets are currently not validated on the client-side, have a look at http://docs.datadoghq.com/api/screenboards/#timeseries-widget or export."
     - "Overwrites remote state, since the script can not know if either local or remote config changed."
     - "Datadog trims titles longer than 80 characters, this is not prevented on the client-side."
 requirements:
     - datadog
-    - json_delta
+    - deepdiff
 options:
     api_key:
         description:
@@ -226,10 +225,10 @@ def main():
     did = module.params.get('id', None)
 
     # don't need additional params for check, just retrieve the remote state
-    patch = None
     if did is not None:
         current, patch = _diff_dashboard(module)
-        if len(patch) == 0 or patch[0] == u" {...}":
+        print("diff %s" % patch)
+        if len(patch) == 0:
             module.exit_json(changed=False, msg="dashboard {0} did not change".format(did))
         elif module.check_mode:
             module.exit_json(changed=True, msg="dashboard {0} changed".format(did), ansible_facts={'datadog_dashboard': current})
@@ -244,7 +243,7 @@ def main():
             module.exit_json(changed=True, msg="dashboard {0} created".format(did))
         else:
             _update_dashboard(module)
-            module.exit_json(changed=True, msg="dashboard {0} updated".format(did), ansible_facts={'datadog_dashboard_patch': patch})
+            module.exit_json(changed=True, msg="dashboard {0} updated".format(did))
 
 
 def _check_timeboard_params(module, graphs):
@@ -300,7 +299,7 @@ def _managed_view(dashboard):
     copy('width')
     copy('height')
     return view
-    
+
 
 def _run_dashboard_func(module, timeboard_func, screenboard_func, none_func=None):
     graphs = _exists_and_is_not_none(module.params, 'graphs')
@@ -350,7 +349,7 @@ def _diff_dashboard(module):
 
     current = _managed_view(_get_dashboard_response(module, lambda: api.Timeboard.get(did), lambda: api.Screenboard.get(did), either))
     desired = _managed_view(module.params)
-    diff = list(udiff(current, desired))
+    diff = DeepDiff(current, desired)
     return current, diff
 
 
@@ -364,7 +363,7 @@ def _update_dashboard(module):
     desired = _managed_view(module.params)
     _get_dashboard_response(module, lambda: api.Timeboard.update(did, **desired), lambda: api.Screenboard.update(did, **desired))
 
+
 from ansible.module_utils.basic import *
 if __name__ == '__main__':
     main()
-main()
