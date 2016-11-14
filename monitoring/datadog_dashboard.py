@@ -335,7 +335,7 @@ def _get_dashboard_response(module, timeboard_api_call, screenboard_api_call, no
 def _diff_dashboard(module):
     did = module.params['id']
 
-    # special case to support migrations, try to hit both APIs in order to identify the type
+    # special case to support migrations, try to hit both APIs in order to identify the type 
     def either():
         response = api.Timeboard.get(did)
         errors = []
